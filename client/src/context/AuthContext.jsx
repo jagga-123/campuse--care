@@ -2,14 +2,17 @@ import { createContext, useContext, useEffect, useState } from 'react';
 
 const AuthContext = createContext();
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Check if user is already logged in on mount
+  // Check user on app load
   useEffect(() => {
     const token = localStorage.getItem('token');
+
     if (token) {
       fetchProfile(token);
     } else {
@@ -17,11 +20,15 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Fetch logged-in user profile
   const fetchProfile = async (token) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await fetch(`${API_URL}/api/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
+
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
@@ -36,28 +43,51 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (name, email, password, role = 'student', department = 'General') => {
+  const register = async (
+    name,
+    email,
+    password,
+    role = 'student',
+    department = 'General'
+  ) => {
     setLoading(true);
     setError(null);
+
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/register`, {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role, department })
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role,
+          department
+        })
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.message || 'Registration failed');
       }
 
-      const data = await response.json();
       localStorage.setItem('token', data.token);
+
       setUser(data);
-      return { success: true };
+
+      return {
+        success: true
+      };
     } catch (err) {
       setError(err.message);
-      return { success: false, error: err.message };
+
+      return {
+        success: false,
+        error: err.message
+      };
     } finally {
       setLoading(false);
     }
@@ -66,25 +96,39 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     setLoading(true);
     setError(null);
+
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/login`, {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email,
+          password
+        })
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.message || 'Login failed');
       }
 
-      const data = await response.json();
       localStorage.setItem('token', data.token);
+
       setUser(data);
-      return { success: true };
+
+      return {
+        success: true
+      };
     } catch (err) {
       setError(err.message);
-      return { success: false, error: err.message };
+
+      return {
+        success: false,
+        error: err.message
+      };
     } finally {
       setLoading(false);
     }
@@ -96,7 +140,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, register, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        error,
+        register,
+        login,
+        logout
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -104,8 +157,10 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
+
   if (!context) {
     throw new Error('useAuth must be used within AuthProvider');
   }
+
   return context;
 };
