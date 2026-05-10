@@ -1,0 +1,11 @@
+{
+  "name": "campuscare",
+  "private": true,
+  "version": "1.0.0",
+  "description": "CampusCare - AI Powered Smart Complaint Management System",
+  "scripts": {
+    "client": "npm run dev --prefix client",
+    "server": "npm run dev --prefix server",
+    "dev": "echo \"Run npm run client and npm run server in separate terminals.\""
+  }
+}
