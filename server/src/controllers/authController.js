@@ -1,9 +1,18 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 
 function signToken(userId) {
-  return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign(
+    { id: userId },
+    process.env.JWT_SECRET || 'campuscare_dev_secret',
+    { expiresIn: '7d' }
+  );
+}
+
+function isDatabaseReady() {
+  return mongoose.connection.readyState === 1;
 }
 
 // In-memory mock user storage for development
@@ -12,7 +21,7 @@ const mockUsers = [
     _id: '1',
     name: 'Ram Kumar',
     email: 'ramkumar123@gmail.com',
-    password: '$2a$10$5H5rH5rH5rH5rH5rH5rH5e7H5rH5rH5rH5rH5rH5rH5rH5rH5rH5r', // hashed 'admin123'
+    password: bcrypt.hashSync('admin123', 10),
     role: 'admin',
     department: 'General',
     phone: '9876543210'
@@ -27,8 +36,11 @@ export async function register(req, res, next) {
       return res.status(400).json({ message: 'Name, email, and password are required' });
     }
 
-    // Try to use MongoDB if connected
     try {
+      if (!isDatabaseReady()) {
+        throw new Error('MongoDB is not connected');
+      }
+
       const existing = await User.findOne({ email });
       if (existing) {
         return res.status(400).json({ message: 'User already exists' });
@@ -52,11 +64,10 @@ export async function register(req, res, next) {
         token: signToken(user._id)
       });
     } catch (dbError) {
-      // Fallback to mock storage if DB fails
       console.warn('Using mock storage for register:', dbError.message);
       const hashedPassword = await bcrypt.hash(password, 10);
       const userId = String(Date.now());
-      
+
       const newUser = {
         _id: userId,
         name,
@@ -86,8 +97,11 @@ export async function login(req, res, next) {
   try {
     const { email, password } = req.body;
 
-    // Try to use MongoDB if connected
     try {
+      if (!isDatabaseReady()) {
+        throw new Error('MongoDB is not connected');
+      }
+
       const user = await User.findOne({ email }).select('+password');
 
       if (!user) {
@@ -107,7 +121,6 @@ export async function login(req, res, next) {
         token: signToken(user._id)
       });
     } catch (dbError) {
-      // Fallback to mock storage if DB fails
       console.warn('Using mock storage for login:', dbError.message);
       const mockUser = mockUsers.find(u => u.email === email);
 
@@ -144,7 +157,6 @@ export async function getProfile(req, res) {
       phone: req.user.phone
     });
   } catch (error) {
-    // Mock response if user not found
     res.json({
       _id: '1',
       name: 'User',

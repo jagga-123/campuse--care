@@ -1,28 +1,19 @@
 import mongoose from 'mongoose';
 
 export default async function connectDB() {
-  const uri = process.env.MONGODB_URI;
-
-  if (!uri) {
-    console.warn('⚠️  MONGODB_URI not defined - running in mock mode');
-    return;
-  }
+  const uri =
+    process.env.MONGODB_URI ||
+    process.env.MONGO_URI ||
+    'mongodb://127.0.0.1:27017/campuscare';
 
   try {
-    const connection = mongoose.connect(uri, {
+    await mongoose.connect(uri, {
       serverSelectionTimeoutMS: 3000,
       socketTimeoutMS: 3000,
     });
-    
-    await Promise.race([
-      connection,
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('MongoDB connection timeout')), 3000)
-      )
-    ]);
-    
-    console.log('✅ MongoDB connected');
+
+    console.log(`MongoDB connected: ${uri}`);
   } catch (error) {
-    console.warn('⚠️  MongoDB connection failed - running in mock mode:', error.message);
+    console.warn('MongoDB connection failed:', error.message);
   }
 }

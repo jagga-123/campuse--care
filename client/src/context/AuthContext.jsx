@@ -1,8 +1,17 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { getApiBaseUrl } from '../utils/api';
 
 const AuthContext = createContext();
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = getApiBaseUrl();
+
+const normalizeNetworkError = (err, fallbackMessage) => {
+  if (err?.message === 'Failed to fetch' || err?.name === 'TypeError') {
+    return `Backend server not reachable at ${API_URL}. Start the server and make sure MongoDB is running.`;
+  }
+
+  return err?.message || fallbackMessage;
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -36,7 +45,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('token');
       }
     } catch (err) {
-      console.error('Failed to fetch profile:', err);
+      console.warn('Failed to fetch profile:', err.message);
       localStorage.removeItem('token');
     } finally {
       setLoading(false);
@@ -75,18 +84,18 @@ export const AuthProvider = ({ children }) => {
       }
 
       localStorage.setItem('token', data.token);
-
       setUser(data);
 
       return {
         success: true
       };
     } catch (err) {
-      setError(err.message);
+      const message = normalizeNetworkError(err, 'Registration failed');
+      setError(message);
 
       return {
         success: false,
-        error: err.message
+        error: message
       };
     } finally {
       setLoading(false);
@@ -116,18 +125,18 @@ export const AuthProvider = ({ children }) => {
       }
 
       localStorage.setItem('token', data.token);
-
       setUser(data);
 
       return {
         success: true
       };
     } catch (err) {
-      setError(err.message);
+      const message = normalizeNetworkError(err, 'Login failed');
+      setError(message);
 
       return {
         success: false,
-        error: err.message
+        error: message
       };
     } finally {
       setLoading(false);

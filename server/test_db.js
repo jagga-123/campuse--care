@@ -13,7 +13,11 @@ import Department from './src/models/Department.js';
 
 async function test() {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(
+      process.env.MONGODB_URI ||
+      process.env.MONGO_URI ||
+      'mongodb://127.0.0.1:27017/campuscare'
+    );
     console.log('Connected to DB');
 
     console.log('Testing Admin Dashboard data...');
