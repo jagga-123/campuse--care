@@ -37,6 +37,13 @@ app.use(morgan('dev'));
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
+app.get('/', (_req, res) => {
+  res.json({
+    status: 'ok',
+    name: 'CampusCare API'
+  });
+});
+
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
